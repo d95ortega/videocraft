@@ -44,6 +44,7 @@ fun FilmStudioDrawerContent(
         DrawerItem(FilmStudioSection.TIMELINE_EDITOR, Icons.Default.MovieCreation),
         DrawerItem(FilmStudioSection.PROJECTS, Icons.Default.Folder),
         DrawerItem(FilmStudioSection.CREDITS, Icons.Default.Bolt),
+        DrawerItem(FilmStudioSection.PC_MODE, Icons.Default.LaptopMac),
         DrawerItem(FilmStudioSection.SETTINGS, Icons.Default.Settings)
     )
 

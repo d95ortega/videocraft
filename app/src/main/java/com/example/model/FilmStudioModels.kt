@@ -13,7 +13,8 @@ enum class FilmStudioSection(val title: String, val category: String) {
     TIMELINE_EDITOR("Editor & Montaje", "Post-producción"),
     PROJECTS("Mis Proyectos", "Biblioteca"),
     CREDITS("Créditos & Planes", "Cuenta"),
-    SETTINGS("Configuración & API", "Sistema")
+    SETTINGS("Configuración & API", "Sistema"),
+    PC_MODE("Modo PC & Web", "Sistema")
 }
 
 data class CharacterProfile(

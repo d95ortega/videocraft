@@ -4,8 +4,9 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -69,164 +70,171 @@ fun ConsistentCharactersScreen(
 
     var showAddDialog by remember { mutableStateOf(false) }
 
-    Column(
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
             .background(StudioDarkBg)
             .padding(14.dp)
             .testTag("consistent_characters_screen")
     ) {
-        // Top Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Group, contentDescription = null, tint = ElectricViolet, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Personajes Consistentes",
-                        color = Color.White,
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Text(
-                    text = "Consistencia de vestuario, rasgos y personalidad en múltiples planos",
-                    color = TextSecondaryDark,
-                    fontSize = 11.sp
-                )
-            }
+        val isWide = maxWidth >= 760.dp
+        val gridColumns = if (isWide) GridCells.Adaptive(minSize = 340.dp) else GridCells.Fixed(1)
 
-            Button(
-                onClick = { showAddDialog = true },
-                colors = ButtonDefaults.buttonColors(containerColor = CoralPink),
-                shape = RoundedCornerShape(8.dp),
-                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Nuevo Personaje", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // AI Consistency Notice Banner
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = ElectricViolet.copy(alpha = 0.15f),
-            shape = RoundedCornerShape(10.dp),
-            border = BorderStroke(1.dp, ElectricViolet.copy(alpha = 0.4f))
-        ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Top Header
             Row(
-                modifier = Modifier.padding(10.dp),
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.Info, contentDescription = null, tint = ElectricViolet, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Las descripciones de vestuario y rasgos físicos se inyectan automáticamente en cada plano para preservar la identidad del personaje entre escenas.",
-                    color = Color.White.copy(alpha = 0.9f),
-                    fontSize = 11.sp
-                )
-            }
-        }
+                Column {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Group, contentDescription = null, tint = ElectricViolet, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Personajes Consistentes",
+                            color = Color.White,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Text(
+                        text = "Consistencia de vestuario, rasgos y personalidad en múltiples planos",
+                        color = TextSecondaryDark,
+                        fontSize = 11.sp
+                    )
+                }
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Characters List
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            items(charactersList) { char ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = StudioSurfaceElevated),
-                    shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, StudioCardBorder)
+                Button(
+                    onClick = { showAddDialog = true },
+                    colors = ButtonDefaults.buttonColors(containerColor = CoralPink),
+                    shape = RoundedCornerShape(8.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp)
                 ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Avatar circle
-                            Box(
-                                modifier = Modifier
-                                    .size(46.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(char.avatarColorHex)),
-                                contentAlignment = Alignment.Center
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Nuevo Personaje", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // AI Consistency Notice Banner
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = ElectricViolet.copy(alpha = 0.15f),
+                shape = RoundedCornerShape(10.dp),
+                border = BorderStroke(1.dp, ElectricViolet.copy(alpha = 0.4f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Info, contentDescription = null, tint = ElectricViolet, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Las descripciones de vestuario y rasgos físicos se inyectan automáticamente en cada plano para preservar la identidad del personaje entre escenas.",
+                        color = Color.White.copy(alpha = 0.9f),
+                        fontSize = 11.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Characters Grid
+            LazyVerticalGrid(
+                columns = gridColumns,
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                items(charactersList) { char ->
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = StudioSurfaceElevated),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(1.dp, StudioCardBorder)
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
-                                    text = char.name.take(2).uppercase(),
-                                    color = Color.White,
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.width(12.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                // Avatar circle
+                                Box(
+                                    modifier = Modifier
+                                        .size(46.dp)
+                                        .clip(CircleShape)
+                                        .background(Color(char.avatarColorHex)),
+                                    contentAlignment = Alignment.Center
+                                ) {
                                     Text(
-                                        text = char.name,
+                                        text = char.name.take(2).uppercase(),
                                         color = Color.White,
-                                        fontSize = 15.sp,
+                                        fontSize = 16.sp,
                                         fontWeight = FontWeight.Bold
                                     )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Surface(
-                                        color = CoralPink.copy(alpha = 0.2f),
-                                        shape = RoundedCornerShape(4.dp)
-                                    ) {
-                                        Text(
-                                            text = char.role,
-                                            color = CoralPink,
-                                            fontSize = 10.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                        )
-                                    }
                                 }
-                                Text(
-                                    text = "${char.apparentAge} • Voz: ${char.voiceTone}",
-                                    color = TextSecondaryDark,
-                                    fontSize = 11.sp
-                                )
+
+                                Spacer(modifier = Modifier.width(12.dp))
+
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Text(
+                                            text = char.name,
+                                            color = Color.White,
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Surface(
+                                            color = CoralPink.copy(alpha = 0.2f),
+                                            shape = RoundedCornerShape(4.dp)
+                                        ) {
+                                            Text(
+                                                text = char.role,
+                                                color = CoralPink,
+                                                fontSize = 10.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                    Text(
+                                        text = "${char.apparentAge} • Voz: ${char.voiceTone}",
+                                        color = TextSecondaryDark,
+                                        fontSize = 11.sp
+                                    )
+                                }
+
+                                Surface(
+                                    color = StudioSurfaceDark,
+                                    shape = RoundedCornerShape(6.dp)
+                                ) {
+                                    Text(
+                                        text = "${char.scenesCount} Escenas",
+                                        color = NeonCyan,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                    )
+                                }
                             }
 
-                            Surface(
-                                color = StudioSurfaceDark,
-                                shape = RoundedCornerShape(6.dp)
-                            ) {
-                                Text(
-                                    text = "${char.scenesCount} Escenas",
-                                    color = NeonCyan,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
-                                )
-                            }
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = "Físico: ${char.physicalDescription}",
+                                color = Color.White.copy(alpha = 0.85f),
+                                fontSize = 11.sp
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Vestuario: ${char.wardrobe}",
+                                color = BrightAmber,
+                                fontSize = 11.sp
+                            )
                         }
-
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Text(
-                            text = "Físico: ${char.physicalDescription}",
-                            color = Color.White.copy(alpha = 0.85f),
-                            fontSize = 11.sp
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "Vestuario: ${char.wardrobe}",
-                            color = BrightAmber,
-                            fontSize = 11.sp
-                        )
                     }
                 }
             }
