@@ -1,0 +1,6 @@
+{
+  "name": "VideoCraft",
+  "description": "Generador cinematográfico de videos y películas completas a partir de prompts con IA. Dirección de escenas, guión dramático, planos de cámara, efectos visuales y banda sonora.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

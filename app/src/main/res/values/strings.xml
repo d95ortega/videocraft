@@ -1,0 +1,27 @@
+<resources>
+    <string name="app_name">VideoCraft</string>
+    <string name="tab_studio">Estudio</string>
+    <string name="tab_templates">Plantillas</string>
+    <string name="tab_camera">Cámara</string>
+    <string name="tab_projects">Proyectos</string>
+    <string name="new_project">Nuevo Video</string>
+    <string name="import_media">Importar Clips</string>
+    <string name="export_video">Exportar</string>
+    <string name="play">Reproducir</string>
+    <string name="pause">Pausar</string>
+    <string name="trim">Recortar</string>
+    <string name="filters">Filtros</string>
+    <string name="text_overlay">Texto</string>
+    <string name="music_audio">Música</string>
+    <string name="stickers">Stickers</string>
+    <string name="speed">Velocidad</string>
+    <string name="transitions">Transición</string>
+    <string name="canvas_ratio">Formato</string>
+    <string name="generate_script">Guión IA</string>
+    <string name="save_draft">Guardar Borrador</string>
+    <string name="rendering_video">Renderizando video…</string>
+    <string name="export_success">¡Video exportado con éxito!</string>
+    <string name="share_video">Compartir Video</string>
+    <string name="empty_projects_title">Aún no tienes proyectos</string>
+    <string name="empty_projects_desc">Comienza creando tu primer video o elige una plantilla prediseñada</string>
+</resources>
