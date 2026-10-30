@@ -24,11 +24,18 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import com.example.ai.CineAiDirectorEngine
 import com.example.ai.CineAiScreenplayEngine
 import com.example.model.*
 import com.example.ui.player.VideoCanvasPlayer
 import com.example.ui.theme.*
 import com.example.viewmodel.VideoStudioViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun CinematicDirectorStudioScreen(
@@ -53,25 +60,121 @@ fun CinematicDirectorStudioScreen(
     var selectedCameraMove by remember { mutableStateOf(CameraMoveEnum.DOLLY_IN) }
     var selectedLighting by remember { mutableStateOf(LightingStyleEnum.NEON_CYBER) }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
+    var isGenerating by remember { mutableStateOf(false) }
+    var generationTitle by remember { mutableStateOf("") }
+    var generationProgress by remember { mutableFloatStateOf(0f) }
+    var generationStage by remember { mutableStateOf("") }
+
+    val mediaPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val label = promptInput.take(15).ifEmpty { "Galería" }
+            val newClip = VideoClip(
+                name = "Mi Medio: $label",
+                uri = uri.toString(),
+                durationSec = selectedDurationSec,
+                endTrimSec = selectedDurationSec,
+                filter = when (selectedStyle) {
+                    VisualStyleEnum.CYBERPUNK_NEON -> VideoFilter.CYBER_NEON
+                    VisualStyleEnum.FILM_NOIR -> VideoFilter.FILM_NOIR
+                    else -> VideoFilter.CINEMATIC
+                },
+                transitionIn = TransitionType.ZOOM_IN
+            )
+            viewModel.addClip(newClip)
+            val startTime = project.totalDurationSec
+            viewModel.seekTo(startTime)
+            viewModel.play()
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("📸 Foto/Video de tu celular añadido y reproduciéndose en el monitor.")
+            }
+        }
+    }
+
     val onGenerateScene: () -> Unit = {
-        val newClip = VideoClip(
-            name = "Toma: ${selectedShotType.label.split(" ").first()}",
-            durationSec = selectedDurationSec,
-            endTrimSec = selectedDurationSec,
-            stockScene = when (selectedGenre) {
-                CinemaGenre.SCI_FI -> StockSceneType.NEON_PULSE
-                CinemaGenre.FANTASY_MYTH -> StockSceneType.AURORA_BOREALIS
-                CinemaGenre.ACTION_THRILLER -> StockSceneType.CYBER_MATRIX
-                else -> StockSceneType.DARK_CINEMA
-            },
-            filter = when (selectedStyle) {
-                VisualStyleEnum.CYBERPUNK_NEON -> VideoFilter.CYBER_NEON
-                VisualStyleEnum.FILM_NOIR -> VideoFilter.FILM_NOIR
-                else -> VideoFilter.CINEMATIC
-            },
-            transitionIn = TransitionType.ZOOM_IN
-        )
-        viewModel.addClip(newClip)
+        coroutineScope.launch {
+            isGenerating = true
+            generationTitle = "Generando Toma con IA"
+            val stages = listOf(
+                "Analizando prompt y composición..." to 0.25f,
+                "Configurando ${selectedShotType.label.split(" ").first()} con ${selectedCameraMove.label}..." to 0.60f,
+                "Sintetizando iluminación ${selectedLighting.label}..." to 0.85f,
+                "¡Plano cinemático listo!" to 1.0f
+            )
+            for ((text, prog) in stages) {
+                generationStage = text
+                generationProgress = prog
+                delay(280)
+            }
+            delay(150)
+            val clipName = "Toma: ${selectedShotType.label.split(" ").first()} • ${promptInput.take(16)}"
+            val newClip = VideoClip(
+                name = clipName,
+                durationSec = selectedDurationSec,
+                endTrimSec = selectedDurationSec,
+                stockScene = when (selectedGenre) {
+                    CinemaGenre.SCI_FI -> StockSceneType.NEON_PULSE
+                    CinemaGenre.FANTASY_MYTH -> StockSceneType.AURORA_BOREALIS
+                    CinemaGenre.ACTION_THRILLER -> StockSceneType.CYBER_MATRIX
+                    else -> StockSceneType.DARK_CINEMA
+                },
+                filter = when (selectedStyle) {
+                    VisualStyleEnum.CYBERPUNK_NEON -> VideoFilter.CYBER_NEON
+                    VisualStyleEnum.FILM_NOIR -> VideoFilter.FILM_NOIR
+                    else -> VideoFilter.CINEMATIC
+                },
+                transitionIn = TransitionType.ZOOM_IN
+            )
+            val prevDuration = project.totalDurationSec
+            viewModel.addClip(newClip)
+            viewModel.addTextOverlay(
+                TextOverlay(
+                    text = promptInput.take(55),
+                    startTimeSec = prevDuration,
+                    endTimeSec = prevDuration + selectedDurationSec - 0.4f,
+                    textColorHex = 0xFFFFD700L,
+                    fontSizeSp = 18,
+                    animation = TextAnimation.TYPEWRITER,
+                    positionYPercent = 0.84f
+                )
+            )
+            viewModel.seekTo(prevDuration)
+            viewModel.play()
+            isGenerating = false
+            snackbarHostState.showSnackbar("🎬 ¡Nueva toma creada y reproduciéndose en el monitor superior!")
+        }
+    }
+
+    val onGenerateFullMovie: () -> Unit = {
+        coroutineScope.launch {
+            isGenerating = true
+            generationTitle = "Produciendo Película Completa con IA"
+            val stages = listOf(
+                "Estructurando actos dramáticos de la historia..." to 0.20f,
+                "Generando personajes, diálogos y voces..." to 0.50f,
+                "Diseñando encuadres de cámara y secuencias..." to 0.80f,
+                "Sintetizando banda sonora y mezclas..." to 1.0f
+            )
+            for ((text, prog) in stages) {
+                generationStage = text
+                generationProgress = prog
+                delay(320)
+            }
+            delay(200)
+            val movie = CineAiDirectorEngine.generateMovieFromPrompt(
+                prompt = promptInput,
+                selectedGenre = selectedGenre,
+                productionType = MovieProductionType.CINEMATIC_TRAILER
+            )
+            viewModel.onMovieGenerated(movie)
+            viewModel.play()
+            isGenerating = false
+            snackbarHostState.showSnackbar("🎬 ¡Película '${movie.title}' creada con éxito y reproduciéndose!")
+        }
     }
 
     BoxWithConstraints(
@@ -167,7 +270,11 @@ fun CinematicDirectorStudioScreen(
                         selectedModel = selectedModel,
                         selectedDurationSec = selectedDurationSec,
                         onDurationChange = { selectedDurationSec = it },
-                        onGenerate = onGenerateScene
+                        onGenerateScene = onGenerateScene,
+                        onGenerateFullMovie = onGenerateFullMovie,
+                        onPickMedia = {
+                            mediaPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
+                        }
                     )
 
                     PanelDireccionCamaraCard(
@@ -209,7 +316,11 @@ fun CinematicDirectorStudioScreen(
                     selectedModel = selectedModel,
                     selectedDurationSec = selectedDurationSec,
                     onDurationChange = { selectedDurationSec = it },
-                    onGenerate = onGenerateScene
+                    onGenerateScene = onGenerateScene,
+                    onGenerateFullMovie = onGenerateFullMovie,
+                    onPickMedia = {
+                        mediaPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
+                    }
                 )
 
                 PanelDireccionCamaraCard(
@@ -224,6 +335,52 @@ fun CinematicDirectorStudioScreen(
                 Spacer(modifier = Modifier.height(16.dp))
             }
         }
+
+        if (isGenerating) {
+            AlertDialog(
+                onDismissRequest = {},
+                containerColor = StudioSurfaceElevated,
+                shape = RoundedCornerShape(16.dp),
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = CoralPink,
+                            strokeWidth = 3.dp
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(generationTitle, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    }
+                },
+                text = {
+                    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                        Text(
+                            text = generationStage,
+                            color = TextSecondaryDark,
+                            fontSize = 13.sp
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        LinearProgressIndicator(
+                            progress = { generationProgress },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp)),
+                            color = CoralPink,
+                            trackColor = StudioSurfaceDark
+                        )
+                    }
+                },
+                confirmButton = {}
+            )
+        }
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(16.dp)
+        )
     }
 }
 
@@ -354,7 +511,9 @@ private fun PanelDeDireccionCard(
     selectedModel: String,
     selectedDurationSec: Float,
     onDurationChange: (Float) -> Unit,
-    onGenerate: () -> Unit
+    onGenerateScene: () -> Unit,
+    onGenerateFullMovie: () -> Unit,
+    onPickMedia: () -> Unit
 ) {
     Card(
         modifier = Modifier
@@ -399,7 +558,7 @@ private fun PanelDeDireccionCard(
             OutlinedTextField(
                 value = promptInput,
                 onValueChange = onPromptChange,
-                label = { Text("Instrucción visual del plano (Prompt)") },
+                label = { Text("Instrucción o idea cinematográfica (Prompt)") },
                 minLines = 2,
                 maxLines = 4,
                 colors = OutlinedTextFieldDefaults.colors(
@@ -489,18 +648,79 @@ private fun PanelDeDireccionCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
+            // Primary Action: Generar Película Completa
             Button(
-                onClick = onGenerate,
-                colors = ButtonDefaults.buttonColors(containerColor = CoralPink),
+                onClick = onGenerateFullMovie,
+                colors = ButtonDefaults.buttonColors(containerColor = ElectricViolet),
                 shape = RoundedCornerShape(10.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp)
-                    .testTag("generate_scene_button")
+                    .height(50.dp)
+                    .testTag("generate_full_movie_button")
             ) {
-                Icon(Icons.Default.MovieFilter, contentDescription = null, modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = BrightAmber, modifier = Modifier.size(20.dp))
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Generar y Añadir Plano a la Película", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                Text("🎬 Generar Película Completa con IA", fontSize = 13.sp, fontWeight = FontWeight.Bold)
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Secondary Actions: Generar Plano Individual o Cargar de Galería
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = onGenerateScene,
+                    colors = ButtonDefaults.buttonColors(containerColor = CoralPink),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .weight(1.1f)
+                        .height(46.dp)
+                        .testTag("generate_scene_button")
+                ) {
+                    Icon(Icons.Default.MovieFilter, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Añadir Toma", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+
+                OutlinedButton(
+                    onClick = onPickMedia,
+                    shape = RoundedCornerShape(10.dp),
+                    border = BorderStroke(1.dp, NeonCyan),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = NeonCyan),
+                    modifier = Modifier
+                        .weight(0.9f)
+                        .height(46.dp)
+                        .testTag("pick_device_media_button")
+                ) {
+                    Icon(Icons.Default.AddPhotoAlternate, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Foto/Video Cel", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Surface(
+                color = StudioSurfaceDark,
+                shape = RoundedCornerShape(8.dp),
+                border = BorderStroke(1.dp, StudioCardBorder),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.Lightbulb, contentDescription = null, tint = BrightAmber, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Tip: 'Generar Película Completa' crea la historia de tu prompt con actos, personajes, diálogos y banda sonora en el monitor.",
+                        color = TextSecondaryDark,
+                        fontSize = 10.sp,
+                        lineHeight = 14.sp
+                    )
+                }
             }
         }
     }

@@ -69,16 +69,44 @@ fun ExportVideoDialog(
                 }
             }
 
-            delay(200)
+            val fileName = "VideoCraft_${project.title.replace(Regex("[^a-zA-Z0-9_]"), "_")}.txt"
+            var savedPath = fileName
+            try {
+                val dir = context.getExternalFilesDir(android.os.Environment.DIRECTORY_DOCUMENTS) ?: context.filesDir
+                val file = java.io.File(dir, fileName)
+                val fullSummary = buildString {
+                    appendLine("==========================================")
+                    appendLine("VIDEOCRAFT AI FILM STUDIO - PROYECTO EXPORTADO")
+                    appendLine("Título: ${project.title}")
+                    appendLine("Resolución: $selectedRes @ ${selectedFps}fps")
+                    appendLine("Duración Total: ${String.format("%.1f", project.totalDurationSec)}s")
+                    appendLine("Tomas: ${project.clips.size} clips")
+                    appendLine("Banda Sonora: ${project.audioTrack?.title ?: "Sintetizador CineAI"}")
+                    appendLine("==========================================")
+                    appendLine()
+                    appendLine("--- TOMAS Y PLANOS ---")
+                    project.clips.forEachIndexed { i, c ->
+                        appendLine("Plano #${i + 1}: ${c.name} (${c.durationSec}s) - Filtro: ${c.filter.name}")
+                    }
+                    appendLine()
+                    appendLine("--- DIÁLOGOS Y SUBTÍTULOS ---")
+                    project.textOverlays.forEach { t ->
+                        appendLine("[${String.format("%.1f", t.startTimeSec)}s]: ${t.text}")
+                    }
+                }
+                file.writeText(fullSummary)
+                savedPath = file.absolutePath
+            } catch (_: Exception) {}
+
             val updated = project.copy(
                 isExported = true,
-                exportedUri = "videocraft_export_${project.id.take(6)}.mp4",
+                exportedUri = savedPath,
                 updatedAt = System.currentTimeMillis()
             )
             onExportComplete(updated)
             renderState = RenderProgressState.Success(
                 projectTitle = project.title,
-                filePath = "videocraft_export_${project.id.take(6)}.mp4",
+                filePath = fileName,
                 durationSec = project.totalDurationSec
             )
         }
@@ -268,23 +296,41 @@ fun ExportVideoDialog(
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Guardado en Galería de VideoCraft • ${String.format("%.1f", state.durationSec)}s",
-                                color = TextSecondaryDark,
-                                fontSize = 12.sp
+                                text = "Guardado en documentos: ${state.filePath} (${String.format("%.1f", state.durationSec)}s)",
+                                color = MintGreen,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
                             )
                             Spacer(modifier = Modifier.height(14.dp))
 
                             Button(
                                 onClick = {
+                                    val shareContent = buildString {
+                                        appendLine("🎬 ¡Mi Producción en VideoCraft AI Studio!")
+                                        appendLine("Título: ${state.projectTitle}")
+                                        appendLine("Duración: ${String.format("%.1f", state.durationSec)}s")
+                                        appendLine()
+                                        appendLine("Tomas producidas:")
+                                        project.clips.forEachIndexed { idx, c ->
+                                            appendLine("• Toma ${idx + 1}: ${c.name}")
+                                        }
+                                        if (project.textOverlays.isNotEmpty()) {
+                                            appendLine()
+                                            appendLine("Diálogos:")
+                                            project.textOverlays.take(3).forEach { t ->
+                                                appendLine("— \"${t.text}\"")
+                                            }
+                                        }
+                                        appendLine()
+                                        appendLine("Creado con #VideoCraft")
+                                    }
                                     val sendIntent = Intent().apply {
                                         action = Intent.ACTION_SEND
-                                        putExtra(
-                                            Intent.EXTRA_TEXT,
-                                            "¡Mira el video que acabo de crear con VideoCraft! 🎬🔥 #${state.projectTitle.replace(" ", "")}"
-                                        )
+                                        putExtra(Intent.EXTRA_SUBJECT, "Producción VideoCraft: ${state.projectTitle}")
+                                        putExtra(Intent.EXTRA_TEXT, shareContent)
                                         type = "text/plain"
                                     }
-                                    val shareIntent = Intent.createChooser(sendIntent, "Compartir video con")
+                                    val shareIntent = Intent.createChooser(sendIntent, "Compartir producción con")
                                     context.startActivity(shareIntent)
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = CoralPink),
@@ -295,7 +341,7 @@ fun ExportVideoDialog(
                             ) {
                                 Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Compartir con Amigos / Redes")
+                                Text("Compartir Proyecto / Redes")
                             }
                         }
                     }

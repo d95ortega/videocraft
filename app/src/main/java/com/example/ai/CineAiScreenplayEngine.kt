@@ -35,12 +35,18 @@ object CineAiScreenplayEngine {
             "Una exploradora descubre una ciudad futurista escondida entre montañas donde una civilización ancestral ha permanecido oculta."
         }
 
+        val words = prompt.split(" ")
+            .filter { it.length > 3 && !listOf("para", "como", "sobre", "donde", "pelicula", "video", "crear", "hacer", "este", "esta", "quiero", "tenga").contains(it.lowercase()) }
+        val mainSubject = words.take(2).joinToString(" ").replaceFirstChar { it.uppercase() }.ifEmpty { "Destino" }
+
         val isMountainExplorer = prompt.contains("explorador", ignoreCase = true) ||
                 prompt.contains("ciudad", ignoreCase = true) ||
                 prompt.contains("montaña", ignoreCase = true)
 
         val title = if (isMountainExplorer) {
             "AURORA: LA CIUDAD DE LAS CUMBRES SILENCIOSAS"
+        } else if (words.isNotEmpty()) {
+            "CRÓNICAS DE ${mainSubject.uppercase()}: EL ORIGEN"
         } else {
             "ECOS DE LA FRONTERA PERDIDA"
         }
@@ -48,10 +54,14 @@ object CineAiScreenplayEngine {
         val logline = if (isMountainExplorer) {
             "Guiada por un artefacto que desafía la física, una cartógrafa solitaria descubre una metrópoli biomecánica oculta en la cordillera, despertando a sus milenarios guardianes."
         } else {
-            "En un mundo donde la memoria es la moneda de cambio, un rebelde debe descifrar la última señal que salvará a su pueblo del olvido eterno."
+            "Inspirado en la visión: '$prompt'. En un mundo al borde del cambio, un protagonista intrépido debe desafiar las reglas establecidas para salvar su futuro."
         }
 
-        val synopsis = "Tras semanas de travesía en terreno extremo, la protagonista atraviesa un paso de montaña considerado intransitable. Al disiparse la tormenta de nieve, se revela ante ella una civilización tecnológica intacta, impulsada por energía geotérmica azul. Pero el contacto no pasa desapercibido: el sistema de defensa central se activa y la exploradora debe demostrar que su misión es de paz antes de que sea demasiado tarde."
+        val synopsis = if (isMountainExplorer) {
+            "Tras semanas de travesía en terreno extremo, la protagonista atraviesa un paso de montaña considerado intransitable. Al disiparse la tormenta de nieve, se revela ante ella una civilización tecnológica intacta, impulsada por energía geotérmica azul. Pero el contacto no pasa desapercibido: el sistema de defensa central se activa y la exploradora debe demostrar que su misión es de paz antes de que sea demasiado tarde."
+        } else {
+            "Una producción cinematográfica basada en: $prompt. La trama explora los desafíos y revelaciones de los personajes frente a lo inesperado, capturando momentos de intensa emoción dramática, diálogos profundos y encuadres de alta escala cinematográfica."
+        }
 
         val protagonist = CharacterProfile(
             name = if (isMountainExplorer) "Elena Cruz" else "Kael Vance",

@@ -358,17 +358,33 @@ object CineAiDirectorEngine {
             sceneTemplates
         }
 
+        val cleanKeyword = prompt.split(" ")
+            .filter { it.length > 3 && !listOf("para", "como", "sobre", "donde", "pelicula", "video", "crear", "hacer", "este", "esta", "quiero", "tenga").contains(it.lowercase()) }
+            .take(3)
+            .joinToString(" ")
+            .ifEmpty { prompt.take(18) }
+
         return selectedBlueprints.mapIndexed { idx, bp ->
+            val customizedPrompt = if (prompt.isNotBlank() && prompt.length > 4) {
+                "${bp.promptDesc} • $prompt"
+            } else {
+                bp.promptDesc
+            }
+            val customizedDialogue = if (idx == 0 && cleanKeyword.isNotBlank()) {
+                "${bp.dialogue} ($cleanKeyword)"
+            } else {
+                bp.dialogue
+            }
             MovieScene(
                 id = UUID.randomUUID().toString(),
                 sceneNumber = idx + 1,
-                actName = bp.act,
-                visualPrompt = bp.promptDesc,
+                actName = if (cleanKeyword.isNotBlank()) "${bp.act}: $cleanKeyword" else bp.act,
+                visualPrompt = customizedPrompt,
                 shotType = bp.shot,
                 cameraMotion = bp.motion,
                 atmosphere = bp.atmo,
                 speaker = bp.speaker,
-                dialogue = bp.dialogue,
+                dialogue = customizedDialogue,
                 durationSec = if (count <= 2) 7.5f else 5.5f,
                 primaryColorHex = bp.colors.first,
                 secondaryColorHex = bp.colors.second,
