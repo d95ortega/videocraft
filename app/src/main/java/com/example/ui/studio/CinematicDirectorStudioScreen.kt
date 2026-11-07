@@ -22,6 +22,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.net.Uri
@@ -30,6 +31,8 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import com.example.ai.CineAiDirectorEngine
 import com.example.ai.CineAiScreenplayEngine
+import com.example.ai.GeminiAiClient
+import com.example.data.ApiKeyManager
 import com.example.model.*
 import com.example.ui.player.VideoCanvasPlayer
 import com.example.ui.theme.*
@@ -149,31 +152,55 @@ fun CinematicDirectorStudioScreen(
         }
     }
 
+    val context = LocalContext.current
+
     val onGenerateFullMovie: () -> Unit = {
         coroutineScope.launch {
             isGenerating = true
-            generationTitle = "Produciendo Película Completa con IA"
-            val stages = listOf(
-                "Estructurando actos dramáticos de la historia..." to 0.20f,
-                "Generando personajes, diálogos y voces..." to 0.50f,
-                "Diseñando encuadres de cámara y secuencias..." to 0.80f,
-                "Sintetizando banda sonora y mezclas..." to 1.0f
-            )
-            for ((text, prog) in stages) {
-                generationStage = text
-                generationProgress = prog
-                delay(320)
+            generationTitle = "Produciendo Película con IA"
+            val key = ApiKeyManager.getActiveApiKey(context)
+            val hasKey = key.isNotBlank() && !key.contains("MY_GEMINI_API_KEY")
+
+            generationStage = if (hasKey) "Conectando con Google Gemini 2.5 Flash..." else "Estructurando narrativa cinematográfica..."
+            generationProgress = 0.25f
+            delay(280)
+
+            val movie = if (hasKey) {
+                generationStage = "Generando planos, personajes y diálogos con Gemini..."
+                generationProgress = 0.60f
+                val result = GeminiAiClient.generateAiMovie(key, promptInput, selectedGenre, 4)
+                if (result.isSuccess) {
+                    result.getOrThrow()
+                } else {
+                    val err = result.exceptionOrNull()?.message ?: "Error de red"
+                    generationStage = "Aviso API: $err. Usando motor CineAI..."
+                    delay(300)
+                    CineAiDirectorEngine.generateMovieFromPrompt(
+                        prompt = promptInput,
+                        selectedGenre = selectedGenre,
+                        productionType = MovieProductionType.CINEMATIC_TRAILER
+                    )
+                }
+            } else {
+                generationStage = "Componiendo planos de cámara e iluminación..."
+                generationProgress = 0.70f
+                delay(300)
+                CineAiDirectorEngine.generateMovieFromPrompt(
+                    prompt = promptInput,
+                    selectedGenre = selectedGenre,
+                    productionType = MovieProductionType.CINEMATIC_TRAILER
+                )
             }
+
+            generationStage = "Sintetizando banda sonora y mezclas..."
+            generationProgress = 1.0f
             delay(200)
-            val movie = CineAiDirectorEngine.generateMovieFromPrompt(
-                prompt = promptInput,
-                selectedGenre = selectedGenre,
-                productionType = MovieProductionType.CINEMATIC_TRAILER
-            )
+
             viewModel.onMovieGenerated(movie)
             viewModel.play()
             isGenerating = false
-            snackbarHostState.showSnackbar("🎬 ¡Película '${movie.title}' creada con éxito y reproduciéndose!")
+            val origin = if (hasKey) "Google Gemini AI (En vivo)" else "Motor CineAI"
+            snackbarHostState.showSnackbar("🎬 ¡Película '${movie.title}' creada por $origin y reproduciéndose!")
         }
     }
 
@@ -515,6 +542,10 @@ private fun PanelDeDireccionCard(
     onGenerateFullMovie: () -> Unit,
     onPickMedia: () -> Unit
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    var isEnhancing by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -539,17 +570,39 @@ private fun PanelDeDireccionCard(
 
                 Button(
                     onClick = {
-                        val enhanced = CineAiScreenplayEngine.enhancePromptWithAi(promptInput, selectedGenre, selectedStyle)
-                        onPromptChange(enhanced)
+                        coroutineScope.launch {
+                            isEnhancing = true
+                            val key = ApiKeyManager.getActiveApiKey(context)
+                            if (key.isNotBlank() && !key.contains("MY_GEMINI_API_KEY")) {
+                                val result = GeminiAiClient.enhancePrompt(key, promptInput, selectedGenre, selectedStyle)
+                                if (result.isSuccess) {
+                                    onPromptChange(result.getOrThrow())
+                                } else {
+                                    val fallback = CineAiScreenplayEngine.enhancePromptWithAi(promptInput, selectedGenre, selectedStyle)
+                                    onPromptChange(fallback)
+                                }
+                            } else {
+                                val fallback = CineAiScreenplayEngine.enhancePromptWithAi(promptInput, selectedGenre, selectedStyle)
+                                onPromptChange(fallback)
+                            }
+                            isEnhancing = false
+                        }
                     },
+                    enabled = !isEnhancing,
                     colors = ButtonDefaults.buttonColors(containerColor = BrightAmber.copy(alpha = 0.2f)),
                     shape = RoundedCornerShape(8.dp),
                     contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
                     border = BorderStroke(1.dp, BrightAmber)
                 ) {
-                    Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = BrightAmber, modifier = Modifier.size(14.dp))
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("Mejorar con IA", color = BrightAmber, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    if (isEnhancing) {
+                        CircularProgressIndicator(modifier = Modifier.size(12.dp), color = BrightAmber, strokeWidth = 2.dp)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Optimizando...", color = BrightAmber, fontSize = 11.sp)
+                    } else {
+                        Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = BrightAmber, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Mejorar con IA", color = BrightAmber, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
 

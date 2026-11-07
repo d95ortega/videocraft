@@ -166,6 +166,18 @@ fun MainScreen(
                             }
                         },
                         actions = {
+                            // Settings & API shortcut
+                            IconButton(
+                                onClick = { activeSection = FilmStudioSection.SETTINGS },
+                                modifier = Modifier.testTag("settings_topbar_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Settings,
+                                    contentDescription = "Configuración & IA",
+                                    tint = if (activeSection == FilmStudioSection.SETTINGS) NeonCyan else Color.White
+                                )
+                            }
+
                             // PC Mode shortcut button
                             IconButton(
                                 onClick = { activeSection = FilmStudioSection.PC_MODE },
